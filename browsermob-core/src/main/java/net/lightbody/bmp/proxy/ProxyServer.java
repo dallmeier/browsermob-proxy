@@ -15,6 +15,7 @@ import net.lightbody.bmp.proxy.auth.AuthType;
 import net.lightbody.bmp.proxy.dns.AdvancedHostResolver;
 import net.lightbody.bmp.proxy.dns.HostResolver;
 import net.lightbody.bmp.proxy.http.BrowserMobHttpClient;
+import net.lightbody.bmp.proxy.http.HttpResponseHandler;
 import net.lightbody.bmp.proxy.http.RequestInterceptor;
 import net.lightbody.bmp.proxy.http.ResponseInterceptor;
 import net.lightbody.bmp.proxy.jetty.http.HttpContext;
@@ -44,6 +45,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -101,6 +103,14 @@ public class ProxyServer implements LegacyProxyServer, BrowserMobProxy {
 
     public ProxyServer(int port) {
         this.port = port;
+    }
+
+    public UUID addResponseHandler(HttpResponseHandler rh){
+        return client.addHttpResponseHandler(rh);
+    }
+
+    public boolean removeHttpResponseHandler(UUID id) {
+        return client.removeHttpResponseHandler(id);
     }
 
     public void start() {

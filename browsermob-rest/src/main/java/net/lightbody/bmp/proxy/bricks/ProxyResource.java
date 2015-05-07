@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.UUID;
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -36,6 +37,8 @@ import net.lightbody.bmp.proxy.http.BrowserMobHttpRequest;
 import net.lightbody.bmp.proxy.http.BrowserMobHttpResponse;
 import net.lightbody.bmp.proxy.http.RequestInterceptor;
 import net.lightbody.bmp.proxy.http.ResponseInterceptor;
+import net.lightbody.bmp.proxy.http.HttpResponseHandler;
+import net.lightbody.bmp.proxy.http.HttpResponseHandlerFactory;
 import org.java_bandwidthlimiter.StreamManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -254,6 +257,41 @@ public class ProxyResource {
             proxy.addHeader(key, value);
         }
         return Reply.saying().ok();
+    }
+
+    @Put
+    @At("/:port/interceptor/add")
+    public Reply<?> addResponseHandler(@Named("port") int port, Request<String> request) throws IOException {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+
+        String responseHandlerType = request.param("responseHandlerType");
+
+        if (responseHandlerType == null) return Reply.saying().badRequest();
+
+        try {
+            HttpResponseHandler handler = HttpResponseHandlerFactory.generateResponseHandler(responseHandlerType, request.params());
+            UUID uuid = proxy.addResponseHandler(handler);
+            return Reply.with(uuid.toString()).ok();
+        } catch (IllegalArgumentException e){
+            return Reply.with(e.getMessage()).error();
+        }
+    }
+
+    @Delete
+    @At("/:port/interceptor/remove/:uuid")
+    public Reply<?> removeResponseHandler(@Named("port") int port, @Named("uuid") String uuid, Request<String> request) {
+        LegacyProxyServer proxy = proxyManager.get(port);
+        if (proxy == null) {
+            return Reply.saying().notFound();
+        }
+        if (proxy.removeHttpResponseHandler(UUID.fromString(uuid))){
+            return Reply.saying().ok();
+        } else {
+            return Reply.saying().notFound();
+        }
     }
 
     @Post

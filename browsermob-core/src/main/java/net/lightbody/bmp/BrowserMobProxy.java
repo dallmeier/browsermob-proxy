@@ -5,6 +5,7 @@ import net.lightbody.bmp.proxy.BlacklistEntry;
 import net.lightbody.bmp.proxy.CaptureType;
 import net.lightbody.bmp.proxy.auth.AuthType;
 import net.lightbody.bmp.proxy.dns.HostResolver;
+import net.lightbody.bmp.proxy.http.HttpResponseHandler;
 import org.littleshoot.proxy.HttpFiltersSource;
 
 import java.net.InetAddress;
@@ -13,6 +14,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public interface BrowserMobProxy {
@@ -520,4 +522,14 @@ public interface BrowserMobProxy {
      * @param filterFactory factory to generate HttpFilters
      */
     void addLastHttpFilterFactory(HttpFiltersSource filterFactory);
+
+
+    /**
+     * Adds an HttpResponseHandler intercepting every http/https response to the proxy.
+     * @param rh Response handler to add
+     * @return unique UUID to identify the response handler
+     */
+    public UUID addResponseHandler(HttpResponseHandler rh);
+
+    public boolean removeHttpResponseHandler(UUID id);
 }

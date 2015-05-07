@@ -2,6 +2,7 @@ package net.lightbody.bmp.proxy;
 
 import net.lightbody.bmp.core.har.Har;
 import net.lightbody.bmp.exception.NameResolutionException;
+import net.lightbody.bmp.proxy.http.HttpResponseHandler;
 import net.lightbody.bmp.proxy.http.RequestInterceptor;
 import net.lightbody.bmp.proxy.http.ResponseInterceptor;
 import org.apache.http.HttpRequestInterceptor;
@@ -13,6 +14,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -134,4 +136,13 @@ public interface LegacyProxyServer {
     void waitForNetworkTrafficToStop(long quietPeriodInMs, long timeoutInMs);
 
     void setOptions(Map<String, String> options);
+
+    /**
+     * Adds an HttpResponseHandler intercepting every http/https response to the proxy.
+     * @param rh Response handler to add
+     * @return unique UUID to identify the response handler
+     */
+    public UUID addResponseHandler(HttpResponseHandler rh);
+
+    public boolean removeHttpResponseHandler(UUID id);
 }

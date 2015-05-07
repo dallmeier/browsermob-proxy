@@ -72,6 +72,7 @@ import org.apache.http.cookie.CookieOrigin;
 import org.apache.http.cookie.CookieSpec;
 import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCookieStore;
@@ -94,23 +95,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -119,9 +108,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
+import java.util.zip.*;
 
 /**
  * WARN : Require zlib > 1.1.4 (deflate support)
@@ -265,7 +252,12 @@ public class BrowserMobHttpClient {
      * remaining requests counter
      */
     private final AtomicInteger requestCounter;
-    
+
+    /**
+     *
+     */
+    private final HttpResponseHandlerRegistry httpResponseHandlerRegistry;
+
     /**
      * Init HTTP client
      * @param streamManager will be capped to 100 Megabits (by default it is disabled)
@@ -275,6 +267,7 @@ public class BrowserMobHttpClient {
         this.requestCounter = requestCounter;
         socketFactory = new SimulatedSocketFactory(streamManager);
         sslSocketFactory = new TrustingSSLSocketFactory(new AllowAllHostnameVerifier(), streamManager);
+        httpResponseHandlerRegistry = new HttpResponseHandlerRegistry();
 
         requestConfigBuilder = RequestConfig.custom()
     		.setConnectionRequestTimeout(60000)
@@ -314,13 +307,13 @@ public class BrowserMobHttpClient {
         httpClientConnMgr.setMaxTotal(600);
         httpClientConnMgr.setDefaultMaxPerRoute(300);
         credsProvider = new WildcardMatchingCredentialsProvider();
-        httpClientBuilder = getDefaultHttpClientBuilder(streamManager);
+        httpClientBuilder = getDefaultHttpClientBuilder(streamManager, httpResponseHandlerRegistry);
         httpClient = httpClientBuilder.build();
         
         HttpClientInterrupter.watch(this);
     }
 
-	private HttpClientBuilder getDefaultHttpClientBuilder(final StreamManager streamManager) {
+	private HttpClientBuilder getDefaultHttpClientBuilder(final StreamManager streamManager, final HttpResponseHandlerRegistry responseHandlerRegistry) {
 		assert requestConfigBuilder != null;
 		return HttpClientBuilder.create()
         	.setConnectionManager(httpClientConnMgr)
@@ -353,6 +346,9 @@ public class BrowserMobHttpClient {
                     if (entry != null) {
 						entry.getResponse().setHeadersSize(responseHeadersSize);
 					}
+
+                    responseHandlerRegistry.callBackHandlers(request, response);
+
                     if (streamManager.getLatency() > 0) {
                         // retrieve real latency discovered in connect SimulatedSocket
                         long realLatency = RequestInfo.get().getLatency(TimeUnit.MILLISECONDS);
@@ -1022,7 +1018,7 @@ public class BrowserMobHttpClient {
                         } catch (IOException e) {
                             throw new RuntimeException("Error when decompressing input stream", e);
                         }
-                    } 
+                    }
 
                     if (hasTextualContent(contentType)) {
                         setTextOfEntry(entry, copy, contentType);
@@ -1416,6 +1412,14 @@ public class BrowserMobHttpClient {
         HttpHost proxy = new HttpHost(host, port);
         httpClientBuilder.setProxy(proxy);
         updateHttpClient();
+    }
+
+    public UUID addHttpResponseHandler(HttpResponseHandler rh) {
+        return httpResponseHandlerRegistry.addResponseHandler(rh);
+    }
+
+    public boolean removeHttpResponseHandler(UUID id) {
+        return httpResponseHandlerRegistry.removeResponseHandler(id);
     }
 
     static class PreemptiveAuth implements HttpRequestInterceptor {
