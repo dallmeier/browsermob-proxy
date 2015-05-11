@@ -65,8 +65,9 @@ public class ContentModifyingHttpResponseHandler implements HttpResponseHandler 
                 Charset charset = ContentType.getOrDefault(oldEntity).getCharset();
 
                 if (charset == null) {
-                    LOG.info("Could not detect charset of http resonse. Not manipulating content.");
-                    return;
+                    charset = Charset.defaultCharset();
+                    LOG.info(String.format("Could not detect charset of http resonse. Assuming %s", charset));
+
                 }
 
                 InputStream is = oldEntity.getContent();
