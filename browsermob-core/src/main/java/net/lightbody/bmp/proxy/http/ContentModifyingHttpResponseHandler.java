@@ -154,7 +154,7 @@ public class ContentModifyingHttpResponseHandler implements HttpResponseHandler 
      * Checks if the given entity matches the expected content encoding Type.
      */
     private boolean hasMatchingContentType(HttpEntity entity) {
-        if (entity == null || entity.getContentType() == null || entity.getContentEncoding() == null) return false;
+        if (entity == null || entity.getContentType() == null) return false;
 
         if(contentTypeValues.size() == 0) return true;
 
