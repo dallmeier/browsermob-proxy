@@ -99,8 +99,6 @@ public class ContentModifyingHttpResponseHandler implements HttpResponseHandler 
                 newEntity.setContentEncoding(oldEntity.getContentEncoding());
                 newEntity.setContentType(oldEntity.getContentType());
 
-                System.out.println(charset);
-
                 String s = toStringAndClose(is, charset);
                 if (doOnce) {
                     s = s.replaceFirst(replacePattern, replaceString);
@@ -162,7 +160,6 @@ public class ContentModifyingHttpResponseHandler implements HttpResponseHandler 
         for (String s: split){
             for(String ctv: contentTypeValues){
                 if(ctv.equalsIgnoreCase(s)) {
-                    System.out.println("Matching Type " + s);
                     return true;
                 }
             }
